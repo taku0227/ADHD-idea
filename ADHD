@@ -1,8 +1,0 @@
-
-/my-board
- ├── public/
- │    └── index.html
- ├── src/
- │    ├── App.jsx
- │    └── supabaseClient.js
- ├── package.json
