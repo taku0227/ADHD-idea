@@ -1,0 +1,91 @@
+import React, { useState, useEffect } from "react";
+import { createClient } from "@supabase/supabase-js";
+
+// Supabase 接続設定（自分のプロジェクトに書き換えてね！）
+const supabase = createClient(
+  "https://xxxxx.supabase.co", // ← SupabaseのURL
+  "public-anon-key"            // ← anon public key
+);
+
+function App() {
+  const [threads, setThreads] = useState([]);
+  const [newThread, setNewThread] = useState("");
+  const [username, setUsername] = useState("");
+  const [comment, setComment] = useState("");
+
+  // データ取得
+  useEffect(() => {
+    fetchThreads();
+  }, []);
+
+  async function fetchThreads() {
+    const { data, error } = await supabase
+      .from("threads")
+      .select("id, content, username, created_at, comments(id, content, username, created_at)")
+      .order("created_at", { ascending: false });
+    if (!error) setThreads(data);
+  }
+
+  // 新しいスレッド追加
+  async function addThread() {
+    if (!newThread || !username) return;
+    await supabase.from("threads").insert([{ content: newThread, username }]);
+    setNewThread("");
+    fetchThreads();
+  }
+
+  // コメント追加
+  async function addComment(threadId) {
+    if (!comment || !username) return;
+    await supabase.from("comments").insert([{ content: comment, username, thread_id: threadId }]);
+    setComment("");
+    fetchThreads();
+  }
+
+  return (
+    <div style={{ maxWidth: "600px", margin: "auto", padding: "1rem" }}>
+      <h1>みんなの案ボード</h1>
+
+      <div style={{ marginBottom: "1rem" }}>
+        <input
+          type="text"
+          placeholder="名前"
+          value={username}
+          onChange={(e) => setUsername(e.target.value)}
+          style={{ marginRight: "0.5rem" }}
+        />
+        <input
+          type="text"
+          placeholder="新しい案を書く"
+          value={newThread}
+          onChange={(e) => setNewThread(e.target.value)}
+        />
+        <button onClick={addThread}>投稿</button>
+      </div>
+
+      {threads.map((thread) => (
+        <div key={thread.id} style={{ border: "1px solid #ccc", marginBottom: "1rem", padding: "0.5rem" }}>
+          <p>
+            <b>{thread.username}</b>: {thread.content}
+          </p>
+          <div style={{ marginLeft: "1rem" }}>
+            {thread.comments?.map((c) => (
+              <p key={c.id}>
+                <b>{c.username}</b>: {c.content}
+              </p>
+            ))}
+            <input
+              type="text"
+              placeholder="コメントを書く"
+              value={comment}
+              onChange={(e) => setComment(e.target.value)}
+            />
+            <button onClick={() => addComment(thread.id)}>送信</button>
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+export default App;
